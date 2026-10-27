@@ -1,0 +1,106 @@
+# ============================================================
+# 数据质量规则配置
+#
+# 每条规则包含：编号、名称、类别、字段、参数、严重程度、责任人、处理动作
+# 这份配置是给业务方看的，改规则不用改代码
+# ============================================================
+
+rules:
+  # ---------- 完整性 ----------
+  - code: R001
+    name: 客户名称必填
+    category: 完整性
+    field: customer_name
+    severity: 2
+    owner: 客户管理组
+    action: 缺失的记录退回业务部门补充
+
+  - code: R002
+    name: 手机号必填
+    category: 完整性
+    field: phone
+    severity: 2
+    owner: 客户管理组
+    action: 缺失的标记为「待补充」，30 天内必须补齐
+
+  # ---------- 唯一性 ----------
+  - code: R003
+    name: 手机号+姓名唯一
+    category: 唯一性
+    fields:
+      - phone
+      - customer_name
+    severity: 2
+    owner: 数据治理组
+    action: 合并重复记录，保留最近更新的那条
+
+  # ---------- 有效性 ----------
+  - code: R004
+    name: 手机号格式
+    category: 有效性
+    field: phone
+    pattern: '^1[3-9]\d{9}$'
+    severity: 1
+    owner: 客户管理组
+    action: 脚本自动修复（去空格、去横线、去 +86），无法修复的人工处理
+
+  - code: R005
+    name: 税号格式
+    category: 有效性
+    field: tax_no
+    pattern: '^[0-9A-Z]{15,20}$'
+    severity: 1
+    owner: 财务组
+    action: 人工核实，税号不能猜
+
+  # ---------- 一致性 ----------
+  - code: R006
+    name: 更新时间不早于创建时间
+    category: 一致性
+    fields:
+      - created_at
+      - updated_at
+    severity: 1
+    owner: 数据治理组
+    action: 检查 ETL 逻辑，可能是系统时间不同步导致
+
+  # ---------- 及时性 ----------
+  - code: R007
+    name: 客户信息一年内需更新
+    category: 及时性
+    field: updated_at
+    max_days: 365
+    severity: 1
+    owner: 客户管理组
+    action: 生成待回访清单，安排客户经理联系
+
+# ============================================================
+# 处理策略
+# ============================================================
+
+strategy:
+  # 严重程度为 2 的错误：必须修复，不修复不允许进入下游
+  error:
+    block_downstream: true
+    report_to: 数据治理委员会
+
+  # 严重程度为 1 的警告：记录并跟踪，不阻塞
+  warning:
+    block_downstream: false
+    report_to: 数据治理组
+
+# ============================================================
+# 执行频率
+# ============================================================
+
+schedule:
+  daily:
+    - R001
+    - R002
+    - R004
+  weekly:
+    - R003
+    - R006
+  monthly:
+    - R005
+    - R007
