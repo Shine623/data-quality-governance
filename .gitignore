@@ -1,0 +1,26 @@
+# 原始数据与输出（含业务数据，不提交）
+data/
+output/
+cleaned*.csv
+deduped*.csv
+reports/
+*.xlsx
+quality_report.csv
+
+# 保留示例数据
+!samples/*.csv
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# IDE
+.idea/
+.vscode/
+
+# 系统
+.DS_Store
+Thumbs.db
